@@ -70,7 +70,12 @@ class _WindowsSettings extends Component<Props> {
           onToggle={autoLaunchToggle}
         />
         <Divider />
-        <ToggleSetting title={'FireBlu'} description={'Burn your eyes.'} toggled={pain} onToggle={painToggle} />
+        <ToggleSetting
+        title='Theme'
+        description='This probably is not getting finished.'
+        toggled={pain}
+        onToggle={painToggle}
+        />
         {autoStartEnabled && (
           <>
             <Divider />
