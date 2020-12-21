@@ -60,7 +60,7 @@ class _EditUsername extends Component<Props, State> {
     const { sending, classes, profile } = this.props
 
     return (
-      <>
+      <div className={classes.container}>
         <Username>Username</Username>
         <P>
           Spice up your Salad account with a unique, personalized username. This username is what we’ll refer to you as
@@ -132,7 +132,7 @@ class _EditUsername extends Component<Props, State> {
             }}
           />
         )}
-      </>
+      </div>
     )
   }
 }

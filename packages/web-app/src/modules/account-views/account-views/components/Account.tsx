@@ -1,9 +1,10 @@
 import classnames from 'classnames'
 import { Component } from 'react'
 import withStyles, { WithStyles } from 'react-jss'
-import { Head } from '../../../../components'
+import { Divider, Head } from '../../../../components'
 import { withLogin } from '../../../auth-views'
 import { Profile } from '../../../profile/models'
+import { MinecraftUsernameContainer } from '../MinecraftUsernameContainer'
 import { EditUsername } from './EditUsername'
 
 const styles = {
@@ -27,6 +28,8 @@ class _Account extends Component<Props> {
         <Head title="Account" />
         <div className={classnames(classes.container)}>
           <EditUsername profile={profile} onSend={onSend} sending={sending} />
+          <Divider />
+          <MinecraftUsernameContainer />
         </div>
       </div>
     )

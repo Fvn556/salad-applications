@@ -295,7 +295,15 @@ export class RewardStore {
             title: `Your order is being processed.`,
             message: 'Check the reward vault for more details.',
             autoClose: false,
-            onClick: () => this.store.routing.push('/account/reward-vault'),
+          })
+          // TODO: Change to correct minecraft error conditional once API is created
+        } else if (error.message === 'Minecraft Username not available') {
+          this.store.notifications.sendNotification({
+            title: 'You need a Minecraft Username to redeem this reward.',
+            message: 'Go to your account page to add your Minecraft Username.',
+            autoClose: false,
+            onClick: () => this.store.routing.push('/settings/summary'),
+            type: 'error',
           })
         } else {
           //Show an error notification

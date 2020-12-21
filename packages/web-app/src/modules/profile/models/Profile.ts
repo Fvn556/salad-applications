@@ -2,6 +2,7 @@ export interface Profile {
   id: string
   username: string
   email: string
+  minefraftUsername?: string
   lastSeenApplicationVersion: string | undefined
 }
 
