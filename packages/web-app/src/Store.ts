@@ -82,7 +82,7 @@ export class RootStore {
     this.autoStart = new AutoStartStore(this)
     this.vault = new VaultStore(axios)
     this.version = new VersionStore(this, axios)
-    this.engagement = new EngagementStore(this)
+    this.engagement = new EngagementStore(this, axios)
     this.zendesk = new Zendesk(axios, this.auth)
 
     addAuthInterceptor(axios, this.auth)
@@ -112,7 +112,6 @@ export class RootStore {
         this.native.login(profile),
         this.referral.loadCurrentReferral(),
         this.referral.loadReferralCode(),
-        this.version.startVersionChecks(),
         this.refresh.refreshData(),
         this.zendesk.login(profile.username, profile.email),
       ])
@@ -127,7 +126,6 @@ export class RootStore {
       yield Promise.allSettled([
         this.analytics.trackLogout(),
         this.saladBowl.stop(StopReason.Logout),
-        this.version.stopVersionChecks(),
         this.native.logout(),
         this.zendesk.logout(),
       ])
