@@ -80,6 +80,9 @@ const styles = (theme: SaladTheme) => ({
   insufficientBalanceLabel: {
     color: theme.red,
   },
+  unableToRedeemLable: {
+    color: theme.darkRed,
+  },
   lowQuanityLabel: {
     color: theme.darkBlue,
     backgroundColor: theme.green,
@@ -92,9 +95,11 @@ interface Props extends WithStyles<typeof styles> {
   authenticated?: boolean
   onBack?: () => void
   onRedeem?: (reward?: Reward) => void
+  onFurtherActionRequired: () => void
   isInCart?: boolean
   onAddToCart?: (reward: Reward) => void
   onRemoveFromCart?: (reward: Reward) => void
+  hasMinecraftUsername: boolean
 }
 
 class _RewardHeaderBar extends Component<Props> {
@@ -103,6 +108,14 @@ class _RewardHeaderBar extends Component<Props> {
 
     if (onRedeem) {
       onRedeem(reward)
+    }
+  }
+
+  furtherActionRequired = () => {
+    const { onFurtherActionRequired } = this.props
+
+    if (onFurtherActionRequired) {
+      onFurtherActionRequired()
     }
   }
 
@@ -115,7 +128,7 @@ class _RewardHeaderBar extends Component<Props> {
   }
 
   render() {
-    const { reward, authenticated, currentBalance, classes, ...rest } = this.props
+    const { reward, authenticated, currentBalance, hasMinecraftUsername, classes, ...rest } = this.props
 
     const balance = currentBalance || 0
 
@@ -126,6 +139,9 @@ class _RewardHeaderBar extends Component<Props> {
     //Flag indicating if this is a promo only game and cannot be redeemed
     const promoGame: boolean = reward ? reward?.price === 0 : false
     const hasBalance = reward ? reward?.price <= balance : false
+
+    // TODO: Find current tag for minecraft item that requires a username
+    const requiresMinecraftUsername = reward?.tags?.includes('minecraft') && !hasMinecraftUsername
 
     return (
       <div className={classnames(classes.container)}>
@@ -163,10 +179,15 @@ class _RewardHeaderBar extends Component<Props> {
                   <SmartLink to="/earn/summary">Earn More Balance</SmartLink>
                 </div>
               )}
+              {requiresMinecraftUsername && authenticated && (
+                <div className={classnames(classes.priceText, classes.stockLabel, classes.unableToRedeemLable)}>
+                  <SmartLink to="/settings/summary">Add Minecraft Username</SmartLink>
+                </div>
+              )}
             </div>
             <Button
               className={classes.buyButton}
-              onClick={this.handleRedeem}
+              onClick={requiresMinecraftUsername ? this.furtherActionRequired : this.handleRedeem}
               disabled={outOfStock || promoGame || (authenticated && !hasBalance)}
             >
               <div className={classes.buyText}>{donation ? 'DONATE' : 'BUY'} NOW</div>

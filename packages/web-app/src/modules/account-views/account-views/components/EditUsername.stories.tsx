@@ -1,5 +1,4 @@
 import { storiesOf } from '@storybook/react'
-import React from 'react'
 import { EditUsername } from './EditUsername'
 
 storiesOf('Modules/Account/AccountViews/components/EditUsername', module).add('default', () => {

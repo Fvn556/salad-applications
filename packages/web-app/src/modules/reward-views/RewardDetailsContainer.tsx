@@ -15,6 +15,15 @@ const mapStoreToProps = (store: RootStore, props: RouteComponentProps<{ id: stri
   isInCart: store.rewards.isInChoppingCart(props.match.params.id),
   onAddToCart: store.rewards.addToChoppingCart,
   onRemoveFromCart: store.rewards.removeFromChoppingCart,
+  hasMinecraftUsername: store.profile.currentProfile?.minefraftUsername !== undefined,
+  onFurtherActionRequired: () =>
+    store.notifications.sendNotification({
+      title: 'You need a Minecraft Username to redeem this reward.',
+      message: 'Go to your account page to add your Minecraft Username.',
+      autoClose: false,
+      onClick: () => store.routing.push('/settings/summary'),
+      type: 'error',
+    }),
 })
 
 export const RewardDetailsContainer = connect(mapStoreToProps, RewardDetailsPage)

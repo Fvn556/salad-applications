@@ -1,4 +1,5 @@
 import { action } from '@storybook/addon-actions'
+import { boolean } from '@storybook/addon-knobs'
 import { storiesOf } from '@storybook/react'
 import { BrowseRewardsPage, MainStorefrontPage, RewardDetailsPage } from '.'
 import { generateResults, generateRewards } from '../components/RewardComponents.stories'
@@ -39,6 +40,8 @@ storiesOf('Modules/Reward Pages/Reward Details Page', module)
         isInCart={true}
         onAddToCart={action('add to cart')}
         onRemoveFromCart={action('remove from cart')}
+        hasMinecraftUsername={boolean('Has Minecraft Username', false)}
+        onFurtherActionRequired={action('further action required')}
       />
     )
   })
@@ -51,6 +54,8 @@ storiesOf('Modules/Reward Pages/Reward Details Page', module)
         isInCart={false}
         onAddToCart={action('add to cart')}
         onRemoveFromCart={action('remove from cart')}
+        hasMinecraftUsername={boolean('Has Minecraft Username', false)}
+        onFurtherActionRequired={action('further action required')}
       />
     )
   })
