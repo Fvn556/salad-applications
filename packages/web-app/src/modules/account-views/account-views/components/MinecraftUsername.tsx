@@ -31,10 +31,8 @@ class _MinecraftUsername extends Component<Props, State> {
   onSubmit = async (values: {}) => {
     const { onUpdateUsername } = this.props
     let v = values as FormTypes
-    if (v.username) {
-      await onUpdateUsername(v.username)
-      this.setState({ isEdit: false })
-    }
+    if (onUpdateUsername && v.username) await onUpdateUsername(v.username)
+    this.setState({ isEdit: false })
   }
 
   validate = (values: {}) => {
