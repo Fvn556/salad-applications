@@ -1,11 +1,11 @@
 import { action } from '@storybook/addon-actions'
-import React from 'react'
+import { Meta } from '@storybook/react'
 import { LoginPanel } from './LoginPanel'
 
 export default {
   title: 'Modules/Auth/components/Login Panel',
   component: LoginPanel,
-}
+} as Meta
 
 export const Default = () => (
   <LoginPanel authenticated={false} canLogin onLogin={action('login')} onRegister={action('register')} />

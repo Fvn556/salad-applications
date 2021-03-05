@@ -2,9 +2,12 @@ import { action, autorun, computed, flow, observable, runInAction } from 'mobx'
 import { EOL } from 'os'
 import * as Storage from '../../Storage'
 import { RootStore } from '../../Store'
+import { ErrorPageType } from '../../UIStore'
 import { MiningStatus } from '../machine/models'
+import { NotificationMessageCategory } from '../notifications/models'
 import { IPersistentStore } from '../versions/IPersistentStore'
 import { getPluginDefinitions } from './definitions'
+import { Accounts, BEAM_WALLET_ADDRESS, ETH_WALLET_ADDRESS, getNiceHashMiningAddress } from './definitions/accounts'
 import { PluginDefinition, StartReason, StopReason } from './models'
 import { ErrorCategory } from './models/ErrorCategory'
 import { ErrorMessage } from './models/ErrorMessage'
@@ -13,6 +16,8 @@ import { PluginStatus } from './models/PluginStatus'
 import { StatusMessage } from './models/StatusMessage'
 
 const CPU_MINING_ENABLED = 'CPU_MINING_ENABLED'
+const GPU_MINING_OVERRIDDEN = 'GPU_MINING_OVERRIDDEN'
+const CPU_MINING_OVERRIDDEN = 'CPU_MINING_OVERRIDDEN'
 
 export class SaladBowlStore implements IPersistentStore {
   private currentPluginDefinition?: PluginDefinition
@@ -21,6 +26,7 @@ export class SaladBowlStore implements IPersistentStore {
   private runningTimer?: NodeJS.Timeout
   private somethingWorks: boolean = false
   private timeoutTimer?: NodeJS.Timeout
+  private hasViewedAVErrorPage: boolean = false
 
   /** The timestamp last time that start was pressed */
 
@@ -42,6 +48,12 @@ export class SaladBowlStore implements IPersistentStore {
   @observable
   public gpuMiningEnabled: boolean = true
 
+  @observable
+  public cpuMiningOverridden: boolean = false
+
+  @observable
+  public gpuMiningOverridden: boolean = false
+
   @computed
   get pluginDefinitions(): PluginDefinition[] {
     const machine = this.store.machine.currentMachine
@@ -50,17 +62,41 @@ export class SaladBowlStore implements IPersistentStore {
       return []
     }
 
-    // TODO: Feed user preferences into the requirements check.
-    const pluginDefinitions = getPluginDefinitions(machine, machineInfo).filter((pluginDefinition) =>
-      pluginDefinition.requirements.every((requirement) =>
-        requirement(machineInfo, { cpu: this.cpuMiningEnabled, gpu: this.gpuMiningEnabled }),
-      ),
+    const accounts: Accounts = {
+      ethermine: {
+        address: ETH_WALLET_ADDRESS,
+        workerId: machine.minerId,
+      },
+      flypoolBeam: {
+        address: BEAM_WALLET_ADDRESS,
+        workerId: machine.minerId,
+      },
+      nicehash: {
+        address: getNiceHashMiningAddress(machine.id),
+        rigId: machine.minerId,
+      },
+    }
+    const pluginDefinitions = getPluginDefinitions(accounts, machineInfo.platform ?? window.salad.platform).filter(
+      (pluginDefinition) =>
+        pluginDefinition.requirements.every((requirement) =>
+          requirement(machineInfo, {
+            cpu: this.cpuMiningEnabled,
+            gpu: this.gpuMiningEnabled,
+            cpuOverridden: this.cpuMiningOverridden,
+            gpuOverridden: this.cpuMiningOverridden,
+          }),
+        ),
     )
-
     console.log(
-      `========== Supported Plugins ==========${EOL}CPU Enabled:${this.cpuMiningEnabled}${EOL}GPU Enabled:${
+      `${EOL}========== Supported Plugins ==========${EOL}CPU Enabled:${this.cpuMiningEnabled}${EOL}GPU Enabled:${
         this.gpuMiningEnabled
-      }${EOL}${
+      }${EOL}---------------------------------------${EOL}NiceHash wallet address: ${
+        accounts.nicehash.address
+      }${EOL}NiceHash rig ID: ${
+        accounts.nicehash.rigId
+      }${EOL}---------------------------------------${EOL}Ethermine wallet address: ${
+        accounts.ethermine.address
+      }${EOL}Ethermine worker ID: ${accounts.ethermine.workerId}${EOL}---------------------------------------${EOL}${
         pluginDefinitions.length === 0
           ? 'No plugins are available to support the hardware in this machine. :-('
           : pluginDefinitions.reduce((output, pluginDefinition) => {
@@ -114,9 +150,13 @@ export class SaladBowlStore implements IPersistentStore {
     this.store.native.on('mining-error', this.onReceiveError)
 
     //Loads the initial CPU mining flag
-    runInAction(() => {
-      this.cpuMiningEnabled = Storage.getItem(CPU_MINING_ENABLED) === 'true'
-    })
+    this.setGpuOnly(!(Storage.getItem(CPU_MINING_ENABLED) === 'true'))
+
+    //Loads initial CPU mining overridden flag
+    this.setCpuOverride(Storage.getItem(CPU_MINING_OVERRIDDEN) === 'true')
+
+    //Loads initial GPU mining overridden flag
+    this.setGpuOverride(Storage.getItem(GPU_MINING_OVERRIDDEN) === 'true')
   }
 
   getSavedData(): object {
@@ -214,23 +254,27 @@ export class SaladBowlStore implements IPersistentStore {
 
   @action
   onReceiveError = (message: ErrorMessage) => {
-    this.store.analytics.trackMiningError(message.errorCategory, message.errorCode)
+    if (!this.hasViewedAVErrorPage) {
+      this.store.analytics.trackMiningError(message.errorCategory, message.errorCode)
+      this.hasViewedAVErrorPage = true
+    }
+
     // Show the error modal
     switch (message.errorCategory) {
       case ErrorCategory.AntiVirus:
-        this.store.ui.showModal('/errors/anti-virus')
+        this.store.ui.showErrorPage(ErrorPageType.AntiVirus)
         break
       // case ErrorCategory.Driver:
-      //   this.store.ui.showModal('/errors/cuda')
+      // this.store.ui.showErrorPage(ErrorPageType.Cuda)
       //   break
       // case ErrorCategory.Network:
-      //   this.store.ui.showModal('/errors/network')
+      // this.store.ui.showErrorPage(ErrorPageType.Network)
       //   break
       // case ErrorCategory.Silent:
       //   console.log('Ignoring silent error')
       //   break
       // case ErrorCategory.Unknown:
-      //   this.store.ui.showModal('/errors/unknown')
+      // this.store.ui.showErrorPage(ErrorPageType.Unknown)
       //   break
     }
   }
@@ -256,6 +300,8 @@ export class SaladBowlStore implements IPersistentStore {
     if (this.isRunning) {
       return
     }
+
+    this.hasViewedAVErrorPage = false
 
     if (!this.canRun) {
       console.log('This machine is not able to run.')
@@ -298,10 +344,11 @@ export class SaladBowlStore implements IPersistentStore {
     //Show a notification reminding users to use auto start
     if (reason === StartReason.Manual && this.store.autoStart.canAutoStart && !this.store.autoStart.autoStart) {
       this.store.notifications.sendNotification({
+        category: NotificationMessageCategory.AutoStart,
         title: 'Salad is best run AFK',
         message: `Don't forget to enable auto start in Settings`,
         id: 123456,
-        onClick: () => this.store.routing.push('/settings/windows-settings'),
+        onClick: () => this.store.routing.push('/settings/desktop-settings'),
       })
     }
 
@@ -355,7 +402,7 @@ export class SaladBowlStore implements IPersistentStore {
     this.currentPluginRetries = 0
     if (this.currentPluginDefinitionIndex >= this.pluginDefinitions.length) {
       this.stop(StopReason.Fallthrough)
-      this.store.ui.showModal('/errors/fallback')
+      this.store.ui.showErrorPage(ErrorPageType.Fallback)
     } else {
       this.currentPluginDefinition = this.pluginDefinitions[this.currentPluginDefinitionIndex]
       this.plugin.name = this.currentPluginDefinition.name
@@ -406,10 +453,51 @@ export class SaladBowlStore implements IPersistentStore {
   })
 
   @action
-  setCpuMiningEnabled = (value: boolean) => {
-    this.cpuMiningEnabled = value
+  setGpuOnly = (value: boolean) => {
+    this.cpuMiningEnabled = !value
+    this.gpuMiningEnabled = value
 
     //Saves the new value locally so it will automatically be loaded next time
-    Storage.setItem(CPU_MINING_ENABLED, value)
+    Storage.setItem(CPU_MINING_ENABLED, !value)
+  }
+
+  @action
+  setGpuOverride = (value: boolean) => {
+    this.gpuMiningOverridden = value
+
+    //Saves the new value locally so it will automatically be loaded next time
+    Storage.setItem(GPU_MINING_OVERRIDDEN, value)
+  }
+
+  @action
+  setCpuOverride = (value: boolean) => {
+    this.cpuMiningOverridden = value
+
+    //Saves the new value locally so it will automatically be loaded next time
+    Storage.setItem(CPU_MINING_OVERRIDDEN, value)
+  }
+
+  @action
+  switchMiningTypeAndStart = (trackEvent?: boolean) => {
+    this.setGpuOnly(!this.gpuMiningEnabled)
+    this.start(StartReason.Manual)
+    if (trackEvent) {
+      this.store.analytics.trackButtonClicked('switch_mining_type_button', 'Switch Mining Type Button', 'enabled')
+    }
+  }
+
+  @action
+  onStartButtonClicked = () => {
+    const notCompatible = !this.canRun
+    const status = this.status
+    const isRunning =
+      status === MiningStatus.Installing || status === MiningStatus.Initializing || status === MiningStatus.Running
+
+    this.store.analytics.trackButtonClicked('start_button', 'Start Button', 'enabled')
+    if (notCompatible && !isRunning) {
+      this.store.ui.showErrorPage(ErrorPageType.NotCompatible)
+    } else {
+      this.toggleRunning()
+    }
   }
 }

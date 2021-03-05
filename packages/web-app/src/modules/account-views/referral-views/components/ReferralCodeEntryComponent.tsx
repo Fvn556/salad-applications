@@ -1,7 +1,7 @@
-import React, { Component } from 'react'
+import { Component } from 'react'
+import { Field, Form } from 'react-final-form'
 import withStyles, { WithStyles } from 'react-jss'
-import { Form, Field } from 'react-final-form'
-import { TextField, Button, ErrorText } from '../../../../components'
+import { Button, ErrorText, TextField } from '../../../../components'
 
 const styles = {
   container: {

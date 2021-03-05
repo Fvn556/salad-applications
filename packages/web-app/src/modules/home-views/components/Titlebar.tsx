@@ -1,8 +1,8 @@
 import { faClone, faMinus, faTimes } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import classnames from 'classnames'
-import React, { Component } from 'react'
-import Img from 'react-image'
+import { Component } from 'react'
+import { Img } from 'react-image'
 import withStyles, { WithStyles } from 'react-jss'
 import { SmartLink } from '../../../components'
 import { SaladTheme } from '../../../SaladTheme'
@@ -136,14 +136,19 @@ class _Titlebar extends Component<Props> {
       <div className={classnames(classes.container, { [classes.bottomBorder]: bottomBorder })}>
         <div className={classes.leftItems}>
           <div className={classes.icon}>
-            <SmartLink to="/">
+            <SmartLink to="/" trackingInfo={{ label: 'Salad Logo Icon' }}>
               <Img height={24} src={icon} />
             </SmartLink>
           </div>
           {isDesktop && menuItems && <TitleStartButtonContainer />}
           {menuItems &&
             menuItems.map((x) => (
-              <SmartLink key={x.name} className={classes.menuItem} to={x.url}>
+              <SmartLink
+                key={x.name}
+                className={classes.menuItem}
+                to={x.url}
+                trackingInfo={{ label: x.name, type: 'header' }}
+              >
                 {x.showNotification && <div className={classes.menuItemNotification}></div>}
                 {x.name}
               </SmartLink>
@@ -153,7 +158,7 @@ class _Titlebar extends Component<Props> {
         {menuItems && (
           <div className={classes.componentContainer}>
             <AccountMenuContainer />
-            {isDesktop && <SettingsButtonContainer />}
+            <SettingsButtonContainer />
           </div>
         )}
 

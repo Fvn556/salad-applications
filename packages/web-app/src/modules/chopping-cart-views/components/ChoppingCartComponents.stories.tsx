@@ -1,23 +1,22 @@
-import React from 'react'
-import { storiesOf } from '@storybook/react'
-import { ChoppingCartButton, ChoppingCartTooltip, AddToCartButton } from '.'
-import { generateRewards } from '../../reward-views/components/RewardComponents.stories'
 import { action } from '@storybook/addon-actions'
+import { storiesOf } from '@storybook/react'
+import { AddToCartButton, ChoppingCartButton, ChoppingCartTooltip } from '.'
+import { generateRewards } from '../../reward-views/components/RewardComponents.stories'
 
 storiesOf('Modules/Chopping Cart/Button', module)
   .add('with rewards (n=1)', () => {
     let rewards = generateRewards(1)
-    return <ChoppingCartButton rewards={rewards} />
+    return <ChoppingCartButton rewards={rewards} onClickChoppingCartIcon={action('Chopping Cart Button Clicked')} />
   })
   .add('with rewards (n=10)', () => {
     let rewards = generateRewards(10)
-    return <ChoppingCartButton rewards={rewards} />
+    return <ChoppingCartButton rewards={rewards} onClickChoppingCartIcon={action('Chopping Cart Button Clicked')} />
   })
   .add('no rewards (undefined)', () => {
-    return <ChoppingCartButton rewards={undefined} />
+    return <ChoppingCartButton rewards={undefined} onClickChoppingCartIcon={action('Chopping Cart Button Clicked')} />
   })
   .add('no rewards (empty)', () => {
-    return <ChoppingCartButton rewards={[]} />
+    return <ChoppingCartButton rewards={[]} onClickChoppingCartIcon={action('Chopping Cart Button Clicked')} />
   })
 
 storiesOf('Modules/Chopping Cart/Tooltip', module)

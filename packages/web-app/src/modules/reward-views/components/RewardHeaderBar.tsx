@@ -1,7 +1,7 @@
 import classnames from 'classnames'
-import React, { Component } from 'react'
+import { Component } from 'react'
 import withStyles, { WithStyles } from 'react-jss'
-import { Button } from '../../../components'
+import { Button, SmartLink } from '../../../components'
 import { SaladTheme } from '../../../SaladTheme'
 import { AddToCartButton } from '../../chopping-cart-views/components'
 import { Reward } from '../../reward/models'
@@ -66,15 +66,19 @@ const styles = (theme: SaladTheme) => ({
     color: theme.red,
   },
   stockLabel: {
-    padding: '2px 10px',
     fontSize: 8,
+    padding: 2,
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
   },
   outOfStockLabel: {
+    padding: '2px 10px',
     color: theme.lightGreen,
     backgroundColor: theme.red,
+  },
+  insufficientBalanceLabel: {
+    color: theme.red,
   },
   lowQuanityLabel: {
     color: theme.darkBlue,
@@ -84,17 +88,20 @@ const styles = (theme: SaladTheme) => ({
 
 interface Props extends WithStyles<typeof styles> {
   reward?: Reward
+  currentBalance?: number
+  authenticated?: boolean
   onBack?: () => void
   onRedeem?: (reward?: Reward) => void
   isInCart?: boolean
   onAddToCart?: (reward: Reward) => void
   onRemoveFromCart?: (reward: Reward) => void
+  requiresMinecraftUsername: boolean
+  trackDisabledBuyNowClick: () => void
 }
 
 class _RewardHeaderBar extends Component<Props> {
   handleRedeem = () => {
     const { reward, onRedeem } = this.props
-
     if (onRedeem) {
       onRedeem(reward)
     }
@@ -109,14 +116,27 @@ class _RewardHeaderBar extends Component<Props> {
   }
 
   render() {
-    const { reward, classes, ...rest } = this.props
+    const {
+      reward,
+      authenticated,
+      currentBalance,
+      requiresMinecraftUsername,
+      trackDisabledBuyNowClick,
+      classes,
+      ...rest
+    } = this.props
+
+    const balance = currentBalance || 0
 
     let donation = reward?.tags.some((x) => x.toLowerCase().startsWith('donation'))
     let outOfStock = reward?.quantity === 0
     let lowQuanity = reward?.quantity !== undefined && reward?.quantity > 0
 
     //Flag indicating if this is a promo only game and cannot be redeemed
-    let promoGame: boolean = reward ? reward?.price === 0 : false
+    const promoGame: boolean = reward ? reward?.price === 0 : false
+    const hasBalance = reward ? reward?.price <= balance : false
+
+    const disabled = outOfStock || promoGame || (authenticated && !hasBalance)
 
     return (
       <div className={classnames(classes.container)}>
@@ -130,9 +150,15 @@ class _RewardHeaderBar extends Component<Props> {
         {!promoGame && (
           <>
             <div className={classes.priceContainer}>
-              <div className={classnames(classes.priceText, { [classes.outOfStockPrice]: outOfStock })}>
+              <div
+                className={classnames(classes.priceText, {
+                  [classes.outOfStockPrice]: hasBalance,
+                  [classes.outOfStockPrice]: outOfStock,
+                })}
+              >
                 ${reward ? reward.price.toFixed(2) : '-'}
               </div>
+
               {outOfStock && (
                 <div className={classnames(classes.priceText, classes.stockLabel, classes.outOfStockLabel)}>
                   Out of Stock
@@ -143,8 +169,23 @@ class _RewardHeaderBar extends Component<Props> {
                   {`${reward?.quantity} Remaining`}
                 </div>
               )}
+              {!hasBalance && authenticated && (
+                <div className={classnames(classes.priceText, classes.stockLabel, classes.insufficientBalanceLabel)}>
+                  <SmartLink to="/earn/summary">Earn More Balance</SmartLink>
+                </div>
+              )}
+              {requiresMinecraftUsername && authenticated && (
+                <div className={classnames(classes.priceText, classes.stockLabel, classes.insufficientBalanceLabel)}>
+                  <SmartLink to="/settings/summary">Add Minecraft Username</SmartLink>
+                </div>
+              )}
             </div>
-            <Button className={classes.buyButton} onClick={this.handleRedeem} disabled={outOfStock || promoGame}>
+            <Button
+              className={classes.buyButton}
+              onClick={this.handleRedeem}
+              disabled={disabled}
+              trackDisabledButtonClick={trackDisabledBuyNowClick}
+            >
               <div className={classes.buyText}>{donation ? 'DONATE' : 'BUY'} NOW</div>
             </Button>
             <AddToCartButton reward={reward} {...rest} />

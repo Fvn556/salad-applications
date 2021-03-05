@@ -1,7 +1,9 @@
-// Theme
 import { SaladTheme } from '../../../../SaladTheme'
 
 export const styles = (theme: SaladTheme) => ({
+  container: {
+    color: theme.lightGreen,
+  },
   input: {
     marginTop: 8,
     width: 300,

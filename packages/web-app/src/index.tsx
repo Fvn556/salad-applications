@@ -13,7 +13,6 @@ import * as Sentry from '@sentry/react'
 import { createBrowserHistory } from 'history'
 import { syncHistoryWithStore } from 'mobx-react-router'
 import allSettled from 'promise.allsettled'
-import React from 'react'
 import ReactDOM from 'react-dom'
 import { ThemeProvider } from 'react-jss'
 import { SkeletonTheme } from 'react-loading-skeleton'
@@ -24,7 +23,6 @@ import { Head } from './components'
 import { config } from './config'
 import { ErrorBoundary } from './ErrorBoundary'
 import { DefaultTheme } from './SaladTheme'
-import * as serviceWorker from './serviceWorker'
 import { createStore } from './Store'
 import { Tooltips } from './Tooltips'
 
@@ -89,8 +87,3 @@ ReactDOM.render(
   </Router>,
   document.getElementById('root'),
 )
-
-// If you want your app to work offline and load faster, you can change
-// unregister() to register() below. Note this comes with some pitfalls.
-// Learn more about service workers: http://bit.ly/CRA-PWA
-serviceWorker.unregister()

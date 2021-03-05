@@ -2,11 +2,14 @@ import * as Sentry from '@sentry/react'
 import { CaptureContext } from '@sentry/types'
 import mixpanel from 'mixpanel-browser'
 import { autorun } from 'mobx'
+import { hotjar } from 'react-hotjar'
 import { config } from '../../config'
 import { RootStore } from '../../Store'
 import { MiningStatus } from '../machine/models'
+import { NotificationMessage } from '../notifications/models'
 import { Profile } from '../profile/models'
 import { Reward } from '../reward/models'
+import { getRewardAvailability } from '../reward/utils'
 
 export class AnalyticsStore {
   private started = false
@@ -23,6 +26,8 @@ export class AnalyticsStore {
         this.store.saladBowl.plugin.algorithm || '-',
       )
     })
+
+    hotjar.initialize(2225817, 6)
   }
 
   public start = (profile: Profile) => {
@@ -175,18 +180,30 @@ export class AnalyticsStore {
 
   /** Track when a machine goes to the earning state */
   public trackMiningError = (type: string, errorCode: number) => {
-    if (!this.started || (errorCode >= 100000000 && errorCode < 200000000)) {
-      return
-    }
-
     this.track('Mining Error', { ErrorType: type, ErrorCode: errorCode })
+  }
+
+  /** Track when a reward is clicked */
+  public trackClickedReward = (reward: Partial<Reward>) => {
+    const availability = getRewardAvailability(reward)
+
+    this.track('Reward Clicked', {
+      Availability: availability,
+      RewardId: reward.id,
+      RewardName: reward.name,
+      RewardPrice: reward.price,
+      RewardCategory: reward.tags,
+    })
   }
 
   /** Track when a reward is selected */
   public trackSelectedReward = (reward: Reward) => {
     if (!this.started) return
 
+    const availability = getRewardAvailability(reward)
+
     this.track('Reward Selected', {
+      Availability: availability,
       RewardId: reward.id,
       RewardName: reward.name,
       RewardPrice: reward.price,
@@ -198,7 +215,9 @@ export class AnalyticsStore {
   public trackRewardView = (reward: Reward) => {
     if (!this.started) return
 
+    const availability = getRewardAvailability(reward)
     this.track('Reward Viewed', {
+      Availability: availability,
       RewardId: reward.id,
       RewardName: reward.name,
       RewardPrice: reward.price,
@@ -215,11 +234,26 @@ export class AnalyticsStore {
     })
   }
 
+  /** Track when a SaladPay is opened for a reward */
+  public trackSaladPayOpened = (reward: Reward) => {
+    const availability = getRewardAvailability(reward)
+    this.track('SaladPay Opened', {
+      Availability: availability,
+      RewardId: reward.id,
+      RewardName: reward.name,
+      RewardPrice: reward.price,
+      RewardCategory: reward.tags,
+    })
+  }
+
   /** Track when a reward is redeemed */
-  public trackRewardRedeemed = (reward: Reward) => {
+  public trackRewardRedeemed = (reward: Reward, inProcess?: boolean) => {
     if (!this.started) return
 
-    this.track('Reward Redeemed', {
+    const trackingEvent = inProcess ? 'Reward Redemption In Process' : 'Reward Redeemed'
+    const availability = getRewardAvailability(reward)
+    this.track(trackingEvent, {
+      Availability: availability,
       RewardId: reward.id,
       RewardName: reward.name,
       RewardPrice: reward.price,
@@ -239,6 +273,112 @@ export class AnalyticsStore {
     if (!this.started) return
 
     this.track('Referral Entered', { Code: code.toUpperCase() })
+  }
+
+  /** Track when a header link is clicked */
+  private trackHeaderLinkClicked = (currentPath: string, to: string, label: string) => {
+    this.track('Header Link Clicked', {
+      CurrentPath: currentPath,
+      To: to,
+      Label: label,
+    })
+  }
+
+  /** Track when a sidebar link is clicked */
+  private trackSidebarLinkClicked = (currentPath: string, to: string, label: string) => {
+    this.track('Sidebar Link Clicked', {
+      CurrentPath: currentPath,
+      To: to,
+      Label: label,
+    })
+  }
+
+  /** Track when a link is clicked */
+  private trackLinkClicked = (currentPath: string, to: string, label: string) => {
+    this.track('Link Clicked', {
+      CurrentPath: currentPath,
+      To: to,
+      Label: label,
+    })
+  }
+
+  /** Track samrt link based on what type was clicked */
+  public trackSmartLink = (to: string, label: string, type?: 'header' | 'sidebar') => {
+    const currentPath = window && window.location.pathname
+    switch (type) {
+      case 'header':
+        this.trackHeaderLinkClicked(currentPath, to, label)
+        break
+      case 'sidebar':
+        this.trackSidebarLinkClicked(currentPath, to, label)
+        break
+      default:
+        this.trackLinkClicked(currentPath, to, label)
+        break
+    }
+  }
+
+  /** Track when an element is clicked */
+  public trackElementClicked = (id: string, label: string) => {
+    const currentPath = window && window.location.pathname
+    this.track('Element Clicked', {
+      CurrentPath: currentPath,
+      Id: id,
+      Label: label,
+    })
+  }
+
+  /** Track when a button is clicked */
+  public trackButtonClicked = (id: string, label: string, state: 'enabled' | 'disabled') => {
+    const currentPath = window && window.location.pathname
+    this.track('Button Clicked', {
+      CurrentPath: currentPath,
+      Id: id,
+      Label: label,
+      State: state,
+    })
+  }
+
+  /** Track when a toast notification is shown */
+  public trackToastNotificationShown = (message: NotificationMessage) => {
+    const type = message.type ? message.type : 'normal'
+    this.track('Toast Notification Shown', {
+      Category: message.category,
+      Title: message.title,
+      Message: message.message,
+      Type: type,
+    })
+  }
+
+  /** Track when a toast notification is clicked */
+  public trackToastNotificationClicked = (message: NotificationMessage) => {
+    const type = message.type ? message.type : 'normal'
+    this.track('Toast Notification Clicked', {
+      Category: message.category,
+      Title: message.title,
+      Message: message.message,
+      Type: type,
+    })
+  }
+
+  /** Track when a toast notification is clicked */
+  public trackToastNotificationClosed = (message: NotificationMessage) => {
+    const type = message.type ? message.type : 'normal'
+    this.track('Toast Notification Closed', {
+      Category: message.category,
+      Title: message.title,
+      Message: message.message,
+      Type: type,
+    })
+  }
+
+  /** Track when an Error Page is viewed by the user */
+  public trackErrorPageViewed = (name: string) => {
+    const currentPath = window && window.location.pathname
+    this.track('Error Page Viewed', {
+      CurrentPath: currentPath,
+      ErrorPage: name,
+    })
   }
 
   private track = (event: string, properties?: { [key: string]: any }) => {

@@ -1,8 +1,7 @@
-import React from 'react'
-import { RootStore } from '../../Store'
-import { NotificationMessage } from './models'
 import { toast } from 'react-toastify'
+import { RootStore } from '../../Store'
 import { NotificationToast } from './components/NotificationToast'
+import { NotificationMessage } from './models'
 
 export class NotificationStore {
   constructor(private readonly store: RootStore) {}
@@ -16,9 +15,24 @@ export class NotificationStore {
       this.store.native.send('show-notification', message)
     }
 
-    const toastComponent = (
-      <NotificationToast {...message} isError={message.type === 'error'} onClick={message.onClick} />
-    )
+    const handleClick = () => {
+      if (message.onClick) {
+        this.store.analytics.trackToastNotificationClicked(message)
+        message.onClick()
+      }
+    }
+
+    const onOpen = () => {
+      this.store.analytics.trackToastNotificationShown(message)
+    }
+
+    const onClose = () => {
+      if (!message.autoClose) {
+        this.store.analytics.trackToastNotificationClosed(message)
+      }
+    }
+
+    const toastComponent = <NotificationToast {...message} isError={message.type === 'error'} onClick={handleClick} />
 
     //Checks to see if a mess
     if (message.id && toast.isActive(message.id)) {
@@ -31,6 +45,8 @@ export class NotificationStore {
         autoClose: message.autoClose,
         closeButton: false,
         hideProgressBar: true,
+        onOpen,
+        onClose,
       })
     } else {
       toast(toastComponent, {
@@ -41,6 +57,8 @@ export class NotificationStore {
         autoClose: message.autoClose,
         closeButton: false,
         hideProgressBar: true,
+        onOpen,
+        onClose,
       })
     }
   }

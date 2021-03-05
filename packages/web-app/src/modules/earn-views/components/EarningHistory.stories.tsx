@@ -1,12 +1,12 @@
+import { Meta } from '@storybook/react'
 import moment from 'moment'
-import React from 'react'
 import { EarningHistory } from '.'
 import { EarningWindow } from '../../balance/models'
 
 export default {
   title: 'Modules/Earn/components/Earning History',
   component: EarningHistory,
-}
+} as Meta
 
 const generateData = (earningScale: number = 1): EarningWindow[] => {
   return [...Array(96)].map((_, i) => ({

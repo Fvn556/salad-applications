@@ -1,10 +1,10 @@
-import React from 'react'
+import { Meta } from '@storybook/react'
 import { TabControl, TabItem } from './TabControl'
 
 export default {
   title: 'Components/Tab Control',
   component: TabControl,
-}
+} as Meta
 
 export const NoItems = () => <TabControl />
 export const OneItem = () => <TabControl tabs={[new TabItem('Item 1', '/item-1')]} />

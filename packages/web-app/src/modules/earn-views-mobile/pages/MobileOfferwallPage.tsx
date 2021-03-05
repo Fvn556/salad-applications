@@ -1,8 +1,7 @@
-import React, { Component } from 'react'
+import { Component } from 'react'
 import withStyles, { WithStyles } from 'react-jss'
 import { Route, Switch } from 'react-router'
 import { TabControl, TabItem } from '../../../components/TabControl'
-import { AdGateContainer } from '../../earn-views/AdGateContainer'
 import { AdGemContainer } from '../../earn-views/AdGemContainer'
 import { OfferToroContainer } from '../../earn-views/OfferToroContainer'
 import { OfferwallContainer } from '../../earn-views/OfferwallContainer'
@@ -29,16 +28,11 @@ class _MobileOfferwallPage extends Component<Props> {
     return (
       <div className={classes.container}>
         <TabControl
-          tabs={[
-            new TabItem('AdGate', '/earn/offerwall/adgate'),
-            new TabItem('AdGem', '/earn/offerwall/adgem'),
-            new TabItem('Offer Toro', '/earn/offerwall/offer-toro'),
-          ]}
+          tabs={[new TabItem('AdGem', '/earn/offerwall/adgem'), new TabItem('OfferToro', '/earn/offerwall/offer-toro')]}
         />
         <div className={classes.fullPage}>
           <Switch>
             <Route exact path="/earn/offerwall" component={OfferwallContainer} />
-            <Route exact path="/earn/offerwall/adgate" component={AdGateContainer} />
             <Route exact path="/earn/offerwall/adgem" component={AdGemContainer} />
             <Route exact path="/earn/offerwall/offer-toro" component={OfferToroContainer} />
           </Switch>

@@ -1,11 +1,11 @@
 import { action } from '@storybook/addon-actions'
-import React from 'react'
+import { Meta } from '@storybook/react'
 import { RangeFilterOption, RewardPriceFilter } from './RewardPriceFilter'
 
 export default {
   title: 'Modules/Rewards/Reward Price Filter',
   component: RewardPriceFilter,
-}
+} as Meta
 
 const createOption = (
   name: string,

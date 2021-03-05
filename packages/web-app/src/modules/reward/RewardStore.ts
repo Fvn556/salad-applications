@@ -1,6 +1,9 @@
 import { AxiosInstance } from 'axios'
 import { action, computed, flow, observable } from 'mobx'
+import { REQUIRES_MINECRAFT_USERNAME } from '../../axiosFactory'
 import { RootStore } from '../../Store'
+import { NotificationMessageCategory } from '../notifications/models'
+import { ProfileStore } from '../profile'
 import { AbortError, SaladPaymentResponse } from '../salad-pay'
 import { SaladPay } from '../salad-pay/SaladPay'
 import { SearchResult } from './models'
@@ -23,6 +26,9 @@ export class RewardStore {
 
   @observable
   private selectedRewardId?: string
+
+  @observable
+  private requiresFurtherAction: boolean = false
 
   @observable
   public isRedeeming: boolean = false
@@ -62,7 +68,28 @@ export class RewardStore {
     return [...this.categoryData.keys()].filter((x) => x)
   }
 
-  constructor(private readonly store: RootStore, private readonly axios: AxiosInstance) {}
+  private checkIfFurtherActionIsRequired(reward: Reward) {
+    const hasMinecraftUsername = this.profile.currentProfile?.extensions?.minecraftUsername != null
+    const requiresMinecraft = reward?.tags?.includes('requires-minecraft-username') && !hasMinecraftUsername
+
+    if (requiresMinecraft) {
+      this.requiresFurtherAction = true
+      this.store.notifications.sendNotification({
+        category: NotificationMessageCategory.FurtherActionRequired,
+        title: 'You need a Minecraft Username to redeem this reward.',
+        message: 'Go to your account page to add your Minecraft Username.',
+        autoClose: false,
+        onClick: () => this.store.routing.push('/settings/summary'),
+        type: 'error',
+      })
+    }
+  }
+
+  constructor(
+    private readonly store: RootStore,
+    private readonly axios: AxiosInstance,
+    private readonly profile: ProfileStore,
+  ) {}
 
   loadReward = flow(
     function* (this: RewardStore, rewardId?: string) {
@@ -74,9 +101,19 @@ export class RewardStore {
         console.log(reward)
         this.rewards.set(reward.id, reward)
       } catch (err) {
-        debugger
         throw err
       }
+    }.bind(this),
+  )
+
+  loadAndTrackReward = flow(
+    function* (this: RewardStore, rewardId?: string) {
+      try {
+        yield this.loadReward(rewardId)
+        const reward = this.getReward(rewardId)
+
+        if (reward) this.store.analytics.trackRewardView(reward)
+      } catch {}
     }.bind(this),
   )
 
@@ -119,6 +156,7 @@ export class RewardStore {
     //Adds the top chops category as the first category so it will always be the first row
     categories.set('top chops', new Set())
     categories.set('fresh loot friday', new Set())
+    categories.set('other gift cards', new Set())
     categories.set('games', new Set())
     categories.set('gaming gift cards', new Set())
     categories.set('hardware', new Set())
@@ -151,6 +189,14 @@ export class RewardStore {
       let sortedIds = sortRewards(rewards).map((x: Reward) => x.id)
 
       categories.set(category, new Set(sortedIds))
+    }
+
+    //Remove blacklisted categories
+    const blacklist = ['', 'creators']
+    for (let category of categories) {
+      if (blacklist.includes(category[0]) || category[0].startsWith('requires-')) {
+        categories.delete(category[0])
+      }
     }
 
     return categories
@@ -209,6 +255,12 @@ export class RewardStore {
 
   @action.bound
   redeemReward = flow(function* (this: RewardStore, reward: Reward) {
+    this.checkIfFurtherActionIsRequired(reward)
+    if (this.requiresFurtherAction) {
+      this.requiresFurtherAction = false
+      return
+    }
+
     if (this.isRedeeming) {
       console.log('Already redeeming reward, skipping')
       return
@@ -240,6 +292,13 @@ export class RewardStore {
         ],
       })
 
+      this.store.analytics.trackSaladPayOpened(reward)
+
+      //Automatically add the reward to the chopping cart if they don't have one selected
+      if (!this.choppingCart || this.choppingCart.length === 0) {
+        this.addToChoppingCart(reward)
+      }
+
       //Shows the SaladPay UI
       response = yield request.show()
 
@@ -255,6 +314,7 @@ export class RewardStore {
 
       //Show a notification
       this.store.notifications.sendNotification({
+        category: NotificationMessageCategory.Redemption,
         title: `You redeemed ${reward.name}!`,
         message: `Congrats on your pick! Your reward is available in the reward vault!`,
         onClick: () => this.store.routing.push('/account/reward-vault'),
@@ -265,16 +325,28 @@ export class RewardStore {
       if (!(error instanceof AbortError)) {
         //Hack since we getting tons of false negatives during redemptions
         if (error.message === timeoutMessage) {
+          this.store.analytics.trackRewardRedeemed(reward, true)
           //Show an order processing notification
           this.store.notifications.sendNotification({
+            category: NotificationMessageCategory.Redemption,
             title: `Your order is being processed.`,
             message: 'Check the reward vault for more details.',
             autoClose: false,
             onClick: () => this.store.routing.push('/account/reward-vault'),
           })
+        } else if (error.message === REQUIRES_MINECRAFT_USERNAME) {
+          this.store.notifications.sendNotification({
+            category: NotificationMessageCategory.FurtherActionRequired,
+            title: 'You need a Minecraft Username to redeem this reward.',
+            message: 'Go to your account page to add your Minecraft Username.',
+            autoClose: false,
+            onClick: () => this.store.routing.push('/settings/summary'),
+            type: 'error',
+          })
         } else {
           //Show an error notification
           this.store.notifications.sendNotification({
+            category: NotificationMessageCategory.Error,
             title: `Uh Oh. Something went wrong.`,
             message: error.message || 'Please try again later',
             autoClose: false,

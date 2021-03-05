@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import { Component, Fragment } from 'react'
 import withStyles, { WithStyles } from 'react-jss'
 import { Head, Scrollbar } from '../../../components'
 import { rewardCategoryRoute } from '../../../RouteUtils'
@@ -22,6 +22,8 @@ const styles = {
 interface Props extends WithStyles<typeof styles> {
   categories?: Map<string, SearchResult[]>
   heroes?: Map<number, HeroType>
+  isRunning: boolean
+  onClickReward: (to: string, action?: Function) => void
 }
 
 /** List of categories that should be displayed as heros, all others are regular rewards */
@@ -29,13 +31,13 @@ const heroCategories = ['top chops']
 
 class _MainStorefrontPage extends Component<Props> {
   getHero = (index: number) => {
-    const { heroes } = this.props
+    const { heroes, isRunning } = this.props
 
     const type = heroes?.get(index + 1)
 
     switch (type) {
       case HeroType.Mining:
-        return <MiningHero key={index} />
+        return <MiningHero key={index} isRunning={isRunning} />
       case HeroType.Offerwall:
         return <OfferwallHero key={index} />
       case HeroType.ReferralEntry:
@@ -47,7 +49,7 @@ class _MainStorefrontPage extends Component<Props> {
   }
 
   render() {
-    const { categories, classes } = this.props
+    const { categories, onClickReward, classes } = this.props
     //Maximum number of rewards to show in a single row
     const maxRowSize = 20
 
@@ -59,26 +61,30 @@ class _MainStorefrontPage extends Component<Props> {
             <NotificationBannerContainer />
             {categories && categories.size > 0 ? (
               Array.from(categories).map(([category, rewards], i) => {
-                if (!rewards || rewards.length === 0) {
-                  return null
+                if (!rewards || rewards.length < 5) {
+                  // The minimum number of items to show on the store
+                  return this.getHero(i)
                 } else if (heroCategories.includes(category)) {
                   return (
-                    <RewardHero key={category} title={category}>
-                      {rewards.map((x) => (
-                        <RewardHeroItem key={x.id} result={x} />
-                      ))}
-                    </RewardHero>
+                    <>
+                      <RewardHero key={category} title={category}>
+                        {rewards.map((x) => (
+                          <RewardHeroItem key={x.id} result={x} />
+                        ))}
+                      </RewardHero>
+                      {this.getHero(i)}
+                    </>
                   )
                 } else {
                   return (
-                    <React.Fragment key={category}>
+                    <Fragment key={category}>
                       <RewardSlider key={category} title={category} viewAllRoute={rewardCategoryRoute(category)}>
                         {rewards.slice(0, maxRowSize).map((x) => (
-                          <RewardItem key={x.id} result={x} />
+                          <RewardItem key={x.id} reward={x} onClick={() => onClickReward(x.url)} />
                         ))}
                       </RewardSlider>
                       {this.getHero(i)}
-                    </React.Fragment>
+                    </Fragment>
                   )
                 }
               })
@@ -89,9 +95,9 @@ class _MainStorefrontPage extends Component<Props> {
                 </RewardHero>
                 {[...Array(3)].map((_v, i) => (
                   <RewardSlider key={i} title={'Games'}>
-                    {[...Array(maxRowSize / 2)].map((_v, i) => (
-                      <RewardItem key={i} />
-                    ))}
+                    {[...Array(maxRowSize / 2)].map((_v, i) => {
+                      return <RewardItem key={i} />
+                    })}
                   </RewardSlider>
                 ))}
               </div>

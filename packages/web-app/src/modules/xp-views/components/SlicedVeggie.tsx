@@ -1,5 +1,5 @@
 import classnames from 'classnames'
-import React, { Component } from 'react'
+import { Component } from 'react'
 import withStyles, { WithStyles } from 'react-jss'
 import { Level } from '../../xp/models/Level'
 
@@ -26,7 +26,7 @@ interface Props extends WithStyles<typeof styles> {
   percent?: number
 }
 
-const getImage = (key: string, slice: number) => require(`../assets/${key}/${slice}.svg`)
+const getImage = (key: string, slice: number) => require(`../assets/${key}/${slice}.svg`).default
 
 class _SlicedVeggie extends Component<Props> {
   getColumnPositions = (percent: number): number[] =>

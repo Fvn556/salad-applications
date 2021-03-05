@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import { Component } from 'react'
 import withStyles, { WithStyles } from 'react-jss'
 import Carousel from 'react-multi-carousel'
 import 'react-multi-carousel/lib/styles.css'
@@ -127,13 +127,13 @@ class _RewardSlider extends Component<Props, State> {
         </SmartLink>
         <div onMouseEnter={this.handleMouseEnterRewards} onMouseLeave={this.handleMouseLeaveRewards}>
           <Carousel
-            keyBoardControl={false}
-            responsive={rewardItemResponsive}
-            customRightArrow={isHoveringRewards ? <RewardSliderButton direction="right" /> : <div />}
-            customLeftArrow={isHoveringRewards ? <RewardSliderButton direction="left" /> : <div />}
-            arrows
-            partialVisible
+            arrows={isHoveringRewards}
+            customLeftArrow={<RewardSliderButton direction="left" />}
+            customRightArrow={<RewardSliderButton direction="right" />}
             infinite
+            keyBoardControl={false}
+            partialVisible
+            responsive={rewardItemResponsive}
           >
             {children}
           </Carousel>

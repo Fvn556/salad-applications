@@ -1,9 +1,8 @@
 import classnames from 'classnames'
-import React, { Component } from 'react'
-//@ts-ignore
+import { Component } from 'react'
 import AspectRatio from 'react-aspect-ratio'
 import 'react-aspect-ratio/aspect-ratio.css'
-import Img from 'react-image'
+import { Img } from 'react-image'
 import withStyles, { WithStyles } from 'react-jss'
 import Skeleton from 'react-loading-skeleton'
 import { Button, SmartLink } from '../../../components'
@@ -129,7 +128,7 @@ class _RewardHeroItem extends Component<Props> {
                 {result ? (
                   <Img
                     className={classes.image}
-                    src={result?.heroImage}
+                    src={result?.heroImage || ''}
                     draggable={false}
                     alt=""
                     loader={<Skeleton height={'100%'} />}
@@ -163,7 +162,7 @@ class _RewardHeroItem extends Component<Props> {
                 </div>
                 <div className={classes.headlineText}>{result?.description}</div>
                 <div className={classes.buttonContainer}>
-                  <SmartLink to={rewardRoute(result.id)}>
+                  <SmartLink to={rewardRoute(result.id)} trackingInfo={{ label: 'Get it Now' }}>
                     <Button disabled={result === undefined}>GET IT NOW</Button>
                   </SmartLink>
                 </div>

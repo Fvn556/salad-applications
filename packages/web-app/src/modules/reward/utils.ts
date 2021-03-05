@@ -42,7 +42,7 @@ export const stringifyRewardQuery = (query: RewardQuery): string => {
     query.category = query.category.map((x) => encodeCategory(x)).sort()
   }
 
-  return queryString.stringify(query)
+  return queryString.stringify(query as Record<string, boolean | number | string | string[]>)
 }
 
 export const parseRewardQuery = (route: RouteComponentProps<{ category?: string }>): RewardQuery => {
@@ -92,4 +92,12 @@ export const sortRewards = (rewards: Reward[]): Reward[] => {
 
     return stockDiff
   })
+}
+
+export const getRewardAvailability = (reward?: Partial<Reward>): 'Out of Stock' | 'Low Quantity' | 'In Stock' => {
+  return reward?.quantity === 0
+    ? 'Out of Stock'
+    : reward?.quantity !== undefined && reward?.quantity > 0
+    ? 'Low Quantity'
+    : 'In Stock'
 }

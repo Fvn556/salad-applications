@@ -1,5 +1,5 @@
-import React, { Component } from 'react'
-import Img from 'react-image'
+import { Component } from 'react'
+import { Img } from 'react-image'
 import withStyles, { WithStyles } from 'react-jss'
 import { Divider, Head, P, Scrollbar, SectionHeader, SmartLink } from '../../../components'
 import { SaladTheme } from '../../../SaladTheme'
@@ -76,7 +76,7 @@ class _MiningInformation extends Component<Props> {
             <P>
               Don't forget to enable{' '}
               <b>
-                <SmartLink to="/settings/windows-settings">Auto Start</SmartLink>
+                <SmartLink to="/settings/desktop-settings">Auto Start</SmartLink>
               </b>
               , this will allow Salad to automatically start when you step away from your machine.
             </P>

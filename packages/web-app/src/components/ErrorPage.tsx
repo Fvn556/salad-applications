@@ -1,4 +1,4 @@
-import React, { Component, ReactNode } from 'react'
+import { Component, ReactNode } from 'react'
 import withStyles, { WithStyles } from 'react-jss'
 import { Modal, ModalPage } from '.'
 import { SaladTheme } from '../SaladTheme'
@@ -7,13 +7,14 @@ const styles = (theme: SaladTheme) => ({
   contentContainer: {
     color: theme.darkBlue,
     textAlign: 'center',
-    padding: '0 4rem',
+    padding: '0 3rem',
   },
   title: {
     fontFamily: 'SharpGroteskLight09',
     fontSize: theme.xLarge,
     textOverflow: 'ellipsis',
     overflow: 'hidden',
+    paddingBottom: '1rem',
     whiteSpace: 'nowrap',
   },
   description: {

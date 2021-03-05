@@ -1,11 +1,11 @@
-import React, { Component } from 'react'
-import withStyles, { WithStyles } from 'react-jss'
-import { SaladTheme } from '../../../SaladTheme'
-import { CartIcon } from '../assets/cart-icon'
-import { Reward } from '../../reward/models'
-// @ts-ignore
+import * as React from 'react'
+import { Component } from 'react'
 import ReactHintFactory from 'react-hint'
+import withStyles, { WithStyles } from 'react-jss'
 import { ChoppingCartTooltip } from '.'
+import { SaladTheme } from '../../../SaladTheme'
+import { Reward } from '../../reward/models'
+import { CartIcon } from '../assets/cart-icon'
 
 const ReactHint = ReactHintFactory(React)
 
@@ -34,11 +34,12 @@ const styles = (theme: SaladTheme) => ({
 
 interface Props extends WithStyles<typeof styles> {
   rewards?: Reward[]
+  onClickChoppingCartIcon: () => void
 }
 
 class _ChoppingCartButton extends Component<Props> {
   render() {
-    const { rewards, classes } = this.props
+    const { onClickChoppingCartIcon, rewards, classes } = this.props
 
     return (
       <>
@@ -49,7 +50,7 @@ class _ChoppingCartButton extends Component<Props> {
           attribute="data-chopping-cart-button"
           onRenderContent={() => <ChoppingCartTooltip rewards={rewards} />}
         />
-        <div className={classes.container} data-chopping-cart-button>
+        <div className={classes.container} data-chopping-cart-button onClick={onClickChoppingCartIcon}>
           {rewards && rewards.length !== 0 && <div className={classes.notificationDot}>{rewards.length}</div>}
           <CartIcon />
         </div>

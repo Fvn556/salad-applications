@@ -1,12 +1,13 @@
-import React from 'react'
+import { action } from '@storybook/addon-actions'
 import { number } from '@storybook/addon-knobs'
-import { Pantry } from './Pantry'
+import { Meta } from '@storybook/react'
 import { defaultLevels } from '../../xp/models/defaultLevels'
+import { Pantry } from './Pantry'
 
 export default {
   title: 'Modules/XP/Pantry',
   component: Pantry,
-}
+} as Meta
 
 const levels = defaultLevels()
 
@@ -23,5 +24,5 @@ export const Basic = () => {
     options[l.key] = l
   }
 
-  return <Pantry currentXp={xp} levels={levels} />
+  return <Pantry currentXp={xp} levels={levels} onPantryClicked={action('Patry Item Clicked')} />
 }

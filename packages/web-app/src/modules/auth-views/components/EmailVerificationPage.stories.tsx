@@ -1,11 +1,11 @@
 import { action } from '@storybook/addon-actions'
-import React from 'react'
+import { Meta } from '@storybook/react'
 import { EmailVerificationPage } from './EmailVerificationPage'
 
 export default {
   title: 'Modules/Profile/Email Verification Page',
   component: EmailVerificationPage,
-}
+} as Meta
 
 const handleCheckEmailVerification = (...args: any[]) => {
   action('Check Email Verification')(...args)

@@ -1,7 +1,7 @@
 import { action } from '@storybook/addon-actions'
+import { boolean } from '@storybook/addon-knobs'
 import { storiesOf } from '@storybook/react'
 import { LoremIpsum } from 'lorem-ipsum'
-import React from 'react'
 import { RewardDescriptionPanel, RewardHeaderBar, RewardInfoPanel, RewardRequirementsPanel } from '.'
 import gta1 from '../../../../.storybook/assets/gta-1.jpg'
 import gta2 from '../../../../.storybook/assets/gta-2.jpg'
@@ -126,34 +126,34 @@ export const generateRewards = (count: number): Reward[] => {
 storiesOf('Modules/Rewards/Reward Item', module)
   .add('complete reward', () => {
     let result = generateResults(1)[0]
-    return <RewardItem result={result} />
+    return <RewardItem reward={result} onClick={action('Reward Item Clicked')} />
   })
   .add('complete reward (long name)', () => {
     let result = generateResults(2)[1]
-    return <RewardItem result={result} />
+    return <RewardItem reward={result} onClick={action('Reward Item Clicked')} />
   })
   .add('out of stock', () => {
     let result = generateResults(2)[1]
     //TODO: result.quantity = 0
-    return <RewardItem result={result} />
+    return <RewardItem reward={result} onClick={action('Reward Item Clicked')} />
   })
   .add('low stock (n=1)', () => {
     let result = generateResults(2)[1]
     //TODO:result.quantity = 1
-    return <RewardItem result={result} />
+    return <RewardItem reward={result} onClick={action('Reward Item Clicked')} />
   })
   .add('low stock (n=3)', () => {
     let result = generateResults(2)[1]
     //TODO:result.quantity = 3
-    return <RewardItem result={result} />
+    return <RewardItem reward={result} onClick={action('Reward Item Clicked')} />
   })
   .add('missing reward', () => {
-    return <RewardItem />
+    return <RewardItem onClick={action('Reward Item Clicked')} />
   })
   .add('no reward image', () => {
     let result = generateResults(1)[0]
     //TODO:result.coverImage = ''
-    return <RewardItem result={result} />
+    return <RewardItem reward={result} onClick={action('Reward Item Clicked')} />
   })
 
 storiesOf('Modules/Rewards/Reward Slider', module)
@@ -161,7 +161,7 @@ storiesOf('Modules/Rewards/Reward Slider', module)
     let result = generateResults(1)[0]
     return (
       <RewardSlider viewAllRoute={'view more'}>
-        <RewardItem result={result} />
+        <RewardItem reward={result} onClick={action('Reward Item Clicked')} />
       </RewardSlider>
     )
   })
@@ -170,7 +170,7 @@ storiesOf('Modules/Rewards/Reward Slider', module)
     return (
       <RewardSlider viewAllRoute={'view more'}>
         {results.map((x) => (
-          <RewardItem result={x} />
+          <RewardItem reward={x} onClick={action('Reward Item Clicked')} />
         ))}
       </RewardSlider>
     )
@@ -180,7 +180,7 @@ storiesOf('Modules/Rewards/Reward Slider', module)
     return (
       <RewardSlider viewAllRoute={'view more'}>
         {results.map((x) => (
-          <RewardItem result={x} />
+          <RewardItem reward={x} onClick={action('Reward Item Clicked')} />
         ))}
       </RewardSlider>
     )
@@ -191,17 +191,17 @@ storiesOf('Modules/Rewards/Reward Slider', module)
       <>
         <RewardSlider title={'Category 1'} viewAllRoute={'view more'}>
           {results.map((x) => (
-            <RewardItem result={x} />
+            <RewardItem reward={x} onClick={action('Reward Item Clicked')} />
           ))}
         </RewardSlider>
         <RewardSlider title={'Category 2'} viewAllRoute={'view more'}>
           {results.map((x) => (
-            <RewardItem result={x} />
+            <RewardItem reward={x} onClick={action('Reward Item Clicked')} />
           ))}
         </RewardSlider>
         <RewardSlider title={'Category 3'} viewAllRoute={'view more'}>
           {results.map((x) => (
-            <RewardItem result={x} />
+            <RewardItem reward={x} onClick={action('Reward Item Clicked')} />
           ))}
         </RewardSlider>
       </>
@@ -321,26 +321,66 @@ storiesOf('Modules/Rewards/Reward Hero Button Group', module).add('both', () => 
 storiesOf('Modules/Rewards/Reward Header Bar', module)
   .add('complete reward', () => {
     let reward = generateRewards(1)[0]
-    return <RewardHeaderBar reward={reward} onBack={action('back')} onRedeem={action('redeem')} />
+    return (
+      <RewardHeaderBar
+        reward={reward}
+        onBack={action('back')}
+        onRedeem={action('redeem')}
+        requiresMinecraftUsername={boolean('Requires Minecraft Username', false)}
+        trackDisabledBuyNowClick={action('Tracks Disabled Button Click')}
+      />
+    )
   })
   .add('complete reward (long name)', () => {
     let reward = generateRewards(2)[1]
-    return <RewardHeaderBar reward={reward} onBack={action('back')} onRedeem={action('redeem')} />
+    return (
+      <RewardHeaderBar
+        reward={reward}
+        onBack={action('back')}
+        onRedeem={action('redeem')}
+        requiresMinecraftUsername={boolean('Requires Minecraft Username', false)}
+        trackDisabledBuyNowClick={action('Tracks Disabled Button Click')}
+      />
+    )
   })
   .add('out of stock', () => {
     let reward = generateRewards(2)[1]
     reward.quantity = 0
-    return <RewardHeaderBar reward={reward} onBack={action('back')} onRedeem={action('redeem')} />
+    return (
+      <RewardHeaderBar
+        reward={reward}
+        onBack={action('back')}
+        onRedeem={action('redeem')}
+        requiresMinecraftUsername={boolean('Requires Minecraft Username', false)}
+        trackDisabledBuyNowClick={action('Tracks Disabled Button Click')}
+      />
+    )
   })
   .add('low stock', () => {
     let reward = generateRewards(2)[1]
     reward.quantity = 2
-    return <RewardHeaderBar reward={reward} onBack={action('back')} onRedeem={action('redeem')} />
+    return (
+      <RewardHeaderBar
+        reward={reward}
+        onBack={action('back')}
+        onRedeem={action('redeem')}
+        requiresMinecraftUsername={boolean('Requires Minecraft Username', false)}
+        trackDisabledBuyNowClick={action('Tracks Disabled Button Click')}
+      />
+    )
   })
   .add('blank name', () => {
     let reward = generateRewards(2)[1]
     reward.name = ''
-    return <RewardHeaderBar reward={reward} onBack={action('back')} onRedeem={action('redeem')} />
+    return (
+      <RewardHeaderBar
+        reward={reward}
+        onBack={action('back')}
+        onRedeem={action('redeem')}
+        requiresMinecraftUsername={boolean('Requires Minecraft Username', false)}
+        trackDisabledBuyNowClick={action('Tracks Disabled Button Click')}
+      />
+    )
   })
 
 storiesOf('Modules/Rewards/Reward Image Carousel', module)

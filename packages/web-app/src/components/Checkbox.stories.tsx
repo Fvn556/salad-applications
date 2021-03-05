@@ -1,11 +1,11 @@
 import { action } from '@storybook/addon-actions'
-import React from 'react'
+import { Meta } from '@storybook/react'
 import { Checkbox } from './Checkbox'
 
 export default {
   title: 'Components/Checkbox',
   component: Checkbox,
-}
+} as Meta
 
 export const Default = () => (
   <>

@@ -1,8 +1,8 @@
-import { observable, action, flow } from 'mobx'
-import { Profile } from './models'
-import { config } from '../../config'
-import { RootStore } from '../../Store'
 import { AxiosInstance } from 'axios'
+import { action, flow, observable } from 'mobx'
+import { RootStore } from '../../Store'
+import { NotificationMessageCategory } from '../notifications/models'
+import { Profile } from './models'
 
 export class ProfileStore {
   @observable
@@ -39,22 +39,25 @@ export class ProfileStore {
 
   @action.bound
   setWhatsNewViewed = flow(function* (this: ProfileStore) {
-    if (this.currentProfile === undefined) return
+    if (this.currentProfile === undefined) {
+      return
+    }
+
+    const whatsNewVersion = this.store.engagement.whatsNewVersion
+    if (whatsNewVersion === undefined) {
+      return
+    }
 
     this.isUpdating = true
-
     try {
-      let patch = yield this.axios.patch('/api/v1/profile', {
-        lastSeenApplicationVersion: config.whatsNewVersion,
+      const response = yield this.axios.patch('/api/v1/profile', {
+        lastSeenApplicationVersion: whatsNewVersion,
       })
-      let profile = patch.data
 
-      this.currentProfile = profile
-
-      this.store.analytics.trackWhatsNew(config.whatsNewVersion)
+      this.currentProfile = response.data
+      this.store.analytics.trackWhatsNew(whatsNewVersion)
     } finally {
       this.isUpdating = false
-      this.store.routing.goBack()
     }
   })
 
@@ -72,6 +75,42 @@ export class ProfileStore {
     } finally {
       this.isUpdating = false
       // this.store.routing.replace('/')
+    }
+  })
+
+  @action.bound
+  updateMinecraftUsername = flow(function* (this: ProfileStore, minecraftUsername: string) {
+    if (this.currentProfile === undefined) {
+      return
+    }
+
+    this.isUpdating = true
+
+    try {
+      let patch = yield this.axios.patch('/api/v1/profile', {
+        extensions:
+          this.currentProfile.extensions === undefined
+            ? {
+                minecraftUsername: minecraftUsername,
+              }
+            : {
+                ...this.currentProfile.extensions,
+                minecraftUsername: minecraftUsername,
+              },
+      })
+      let profile = patch.data
+
+      this.currentProfile = profile
+    } catch (error) {
+      this.store.notifications.sendNotification({
+        category: NotificationMessageCategory.FurtherActionRequired,
+        title: 'Unable to update your Minecraft Username',
+        message: 'Please try again.',
+        autoClose: false,
+        type: 'error',
+      })
+    } finally {
+      this.isUpdating = false
     }
   })
 }

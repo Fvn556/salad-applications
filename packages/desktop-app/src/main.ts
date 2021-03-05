@@ -14,13 +14,12 @@ import {
 } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import { MenuItemConstructorOptions } from 'electron/main'
-import isOnline from 'is-online'
 import { WindowsToaster } from 'node-notifier'
 import * as os from 'os'
 import * as path from 'path'
 import process from 'process'
 import * as si from 'systeminformation'
-import { Config } from './config'
+import { APP_URL } from './config'
 import * as icons from './icons'
 import * as Logger from './Logger'
 import { MachineInfo } from './models/MachineInfo'
@@ -31,6 +30,7 @@ import { PluginManager } from './salad-bowl/PluginManager'
 import { SaladBridgeNotificationService } from './salad-bowl/SaladBridgeNotificationService'
 import { SaladBridge } from './SaladBridge'
 import { DefaultTheme as theme } from './SaladTheme'
+import isOnline = require('is-online')
 
 // The path to the `/static` folder. This is provided by electron-webpack.
 declare const __static: string
@@ -68,14 +68,14 @@ const showNotification = 'show-notification'
 const start = 'start-salad'
 const stop = 'stop-salad'
 
-let machineInfo: MachineInfo
+let machineInfo: Promise<MachineInfo> | undefined
 let mainWindow: BrowserWindow
 let offlineWindow: BrowserWindow
 let pluginManager: PluginManager | undefined
 let activeIconEnabled = false
 let tray: Tray
 let updateChecked = false
-let darkTheme = false
+let darkTheme = nativeTheme.shouldUseDarkColors
 
 const getMachineInfo = (): Promise<MachineInfo> => {
   return Promise.allSettled([
@@ -233,7 +233,7 @@ const createMainWindow = () => {
     width: 1216,
   })
 
-  mainWindow.loadURL(Config.appUrl)
+  mainWindow.loadURL(APP_URL)
   mainWindow.on('close', () => app.quit())
 
   mainWindow.webContents.on('before-input-event', (_: any, input: Input) => {
@@ -321,23 +321,14 @@ const createMainWindow = () => {
 
   ipcMain.on('js-dispatch', bridge.receiveMessage)
 
-  var getMachineInfoPromise: Promise<void> | undefined = undefined
-
   //Listen for machine info requests
   bridge.on('get-machine-info', () => {
-    //Return the cached machine info
-    if (machineInfo) {
-      bridge.send('set-machine-info', machineInfo)
+    if (machineInfo === undefined) {
+      machineInfo = getMachineInfo()
     }
 
-    //Prevent multiple `getMachineInfo` from being called at the same time
-    if (getMachineInfoPromise !== undefined) return
-
-    //Fetch the machine info
-    getMachineInfoPromise = getMachineInfo().then((info) => {
-      machineInfo = info
-      bridge.send('set-machine-info', machineInfo)
-      getMachineInfoPromise = undefined
+    machineInfo.then((info) => {
+      bridge.send('set-machine-info', info)
     })
   })
 

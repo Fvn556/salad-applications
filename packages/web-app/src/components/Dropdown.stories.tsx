@@ -1,11 +1,11 @@
 import { action } from '@storybook/addon-actions'
-import React from 'react'
+import { Meta } from '@storybook/react'
 import { Dropdown } from './Dropdown'
 
 export default {
   title: 'Components/Dropdown',
   component: Dropdown,
-}
+} as Meta
 
 const options = [
   { label: 'Default', value: 'Option 1' },
