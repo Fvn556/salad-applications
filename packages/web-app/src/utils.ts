@@ -1,3 +1,5 @@
+import moment from 'moment'
+import sanitizeHtml from 'sanitize-html'
 import { RootStore } from './Store'
 
 /** Convert hours to ms */
@@ -52,6 +54,19 @@ export const formatDuration = (duration: number): string => {
   return Math.floor(seconds) + ' sec'
 }
 
+/**
+ * Formats the duration in a human readable way based
+ * on military time (00 hrs 12 min 32 sec)
+ * @param duration Duration in ms
+ */
+export const formatDurationInMilitaryTime = (duration: number) => {
+  const prepDuration = moment.duration(duration)
+  return `${prepDuration.hours().toString().padStart(2, '0')} hrs ${prepDuration
+    .minutes()
+    .toString()
+    .padStart(2, '0')} min ${prepDuration.seconds().toString().padStart(2, '0')} sec`
+}
+
 export const formatBalance = (balance?: number): string => {
   if (!balance) {
     return '$0'
@@ -80,4 +95,26 @@ export const routeLink = (store: RootStore, path: string) => {
   } else {
     store.routing.push(path)
   }
+}
+
+export const getSanitizedHTML = (html: string) => {
+  const sanitizedHTML = sanitizeHtml(html, {
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img']),
+    allowedAttributes: {
+      img: ['src', 'alt'],
+      a: ['href', 'target', 'rel'],
+    },
+    transformTags: {
+      a: function (tagName, attribs) {
+        attribs.rel = 'noopener noreferrer'
+        attribs.target = '_blank'
+
+        return {
+          tagName,
+          attribs,
+        }
+      },
+    },
+  })
+  return sanitizedHTML
 }

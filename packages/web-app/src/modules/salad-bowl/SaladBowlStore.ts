@@ -8,7 +8,7 @@ import { NotificationMessageCategory } from '../notifications/models'
 import { IPersistentStore } from '../versions/IPersistentStore'
 import { getPluginDefinitions } from './definitions'
 import { Accounts, BEAM_WALLET_ADDRESS, ETH_WALLET_ADDRESS, getNiceHashMiningAddress } from './definitions/accounts'
-import { PluginDefinition, StartReason, StopReason } from './models'
+import { PluginDefinition, StartActionType, StartReason, StopReason } from './models'
 import { ErrorCategory } from './models/ErrorCategory'
 import { ErrorMessage } from './models/ErrorMessage'
 import { PluginInfo } from './models/PluginInfo'
@@ -26,7 +26,6 @@ export class SaladBowlStore implements IPersistentStore {
   private runningTimer?: NodeJS.Timeout
   private somethingWorks: boolean = false
   private timeoutTimer?: NodeJS.Timeout
-  private hasViewedAVErrorPage: boolean = false
 
   /** The timestamp last time that start was pressed */
 
@@ -53,6 +52,9 @@ export class SaladBowlStore implements IPersistentStore {
 
   @observable
   public gpuMiningOverridden: boolean = false
+
+  @observable
+  public hasViewedAVErrorPage: boolean = false
 
   @computed
   get pluginDefinitions(): PluginDefinition[] {
@@ -131,6 +133,16 @@ export class SaladBowlStore implements IPersistentStore {
   }
 
   @computed
+  get isNotCompatible(): boolean {
+    return !this.canRun
+  }
+
+  @computed
+  get isOverriding(): boolean {
+    return this.gpuMiningOverridden || this.cpuMiningOverridden
+  }
+
+  @computed
   get status(): MiningStatus {
     switch (this.plugin.status) {
       case PluginStatus.Installing:
@@ -143,6 +155,32 @@ export class SaladBowlStore implements IPersistentStore {
       default:
         return MiningStatus.Stopped
     }
+  }
+
+  @computed
+  get preppingProgress(): number {
+    let progress: number = 0
+    const runningTime = this.runningTime
+
+    if (runningTime) {
+      if (runningTime <= 60000) {
+        progress = 0.1
+      }
+
+      if (runningTime > 60000 && runningTime <= 600000) {
+        progress = 0.2
+      }
+
+      if (runningTime > 600000 && runningTime <= 1200000) {
+        progress = 0.3
+      }
+
+      if (runningTime > 1200000) {
+        progress = 0.4
+      }
+    }
+
+    return progress
   }
 
   constructor(private readonly store: RootStore) {
@@ -279,35 +317,91 @@ export class SaladBowlStore implements IPersistentStore {
     }
   }
 
-  @action
-  toggleRunning = () => {
-    if (this.isRunning) {
-      this.stop(StopReason.Manual)
-    } else {
-      this.start(StartReason.Manual)
-    }
-  }
+  public toggleRunning = flow(
+    function* (this: SaladBowlStore, startAction: StartActionType) {
+      if (startAction !== StartActionType.Automatic) {
+        try {
+          yield this.store.auth.login()
+        } catch {
+          return
+        }
+      }
+
+      if (
+        startAction !== StartActionType.StartButton &&
+        startAction !== StartActionType.StopPrepping &&
+        this.isRunning
+      ) {
+        return
+      }
+
+      switch (startAction) {
+        case StartActionType.TimeToChopStartButton:
+        case StartActionType.StartButton:
+          if (this.isRunning) {
+            if (this.status === MiningStatus.Initializing || this.status === MiningStatus.Installing) {
+              this.store.ui.showModal('/warnings/dont-lose-progress')
+              return
+            }
+            this.stop(StopReason.Manual)
+          } else {
+            if (startAction === StartActionType.TimeToChopStartButton) {
+              this.store.analytics.trackButtonClicked(
+                'time_to_chop_start_button',
+                'Time To Chop Start Button',
+                'enabled',
+              )
+            }
+
+            if (startAction === StartActionType.StartButton) {
+              this.store.analytics.trackButtonClicked('start_button', 'Start Button', 'enabled')
+            }
+
+            this.start(StartReason.Manual)
+          }
+          break
+        case StartActionType.Override:
+          this.store.analytics.trackButtonClicked('override_button', 'Override Button', 'enabled')
+          this.gpuMiningEnabled ? this.store.saladBowl.setGpuOverride(true) : this.store.saladBowl.setCpuOverride(true)
+          this.start(StartReason.Manual)
+          break
+        case StartActionType.SwitchMiner:
+          this.store.analytics.trackButtonClicked('switch_mining_type_button', 'Switch Mining Type Button', 'enabled')
+          this.setGpuOnly(!this.gpuMiningEnabled)
+          this.start(StartReason.Manual)
+          break
+        case StartActionType.StopPrepping:
+          this.store.analytics.trackButtonClicked('stop_prepping_button', 'Stop Prepping Button', 'enabled')
+          this.store.ui.hideModal()
+          this.stop(StopReason.Manual)
+          break
+        case StartActionType.Automatic:
+          this.start(StartReason.Automatic)
+          break
+      }
+    }.bind(this),
+  )
 
   @action.bound
-  start = flow(function* (this: SaladBowlStore, reason: StartReason, startTimestamp?: Date, choppingTime?: number) {
-    //Ensures that the user is logged in
-    try {
-      yield this.store.auth.login()
-    } catch {
-      return
-    }
-
+  private start = flow(function* (
+    this: SaladBowlStore,
+    reason: StartReason,
+    startTimestamp?: Date,
+    choppingTime?: number,
+  ) {
     if (this.isRunning) {
       return
     }
 
-    this.hasViewedAVErrorPage = false
-
     if (!this.canRun) {
+      if (this.store.auth.isAuthenticated && !this.isOverriding) {
+        this.store.ui.showErrorPage(ErrorPageType.NotCompatible)
+      }
       console.log('This machine is not able to run.')
       return
     }
 
+    this.hasViewedAVErrorPage = false
     if (this.timeoutTimer != null) {
       clearTimeout(this.timeoutTimer)
       this.timeoutTimer = undefined
@@ -338,6 +432,10 @@ export class SaladBowlStore implements IPersistentStore {
       runningCheck: this.currentPluginDefinition.runningCheck,
       errors: this.currentPluginDefinition.errors,
     })
+
+    console.log(
+      `Starting plugin ${this.currentPluginDefinition.name}-${this.currentPluginDefinition.version}: ${this.currentPluginDefinition.exe} ${this.currentPluginDefinition.args}`,
+    )
 
     this.store.analytics.trackStart(reason, this.gpuMiningEnabled, this.cpuMiningEnabled)
 
@@ -419,6 +517,10 @@ export class SaladBowlStore implements IPersistentStore {
         errors: this.currentPluginDefinition.errors,
       })
 
+      console.log(
+        `Starting plugin ${this.currentPluginDefinition.name}-${this.currentPluginDefinition.version}: ${this.currentPluginDefinition.exe} ${this.currentPluginDefinition.args}`,
+      )
+
       this.timeoutTimer = setTimeout(() => {
         this.timeoutTimer = undefined
         this.startNext()
@@ -475,29 +577,5 @@ export class SaladBowlStore implements IPersistentStore {
 
     //Saves the new value locally so it will automatically be loaded next time
     Storage.setItem(CPU_MINING_OVERRIDDEN, value)
-  }
-
-  @action
-  switchMiningTypeAndStart = (trackEvent?: boolean) => {
-    this.setGpuOnly(!this.gpuMiningEnabled)
-    this.start(StartReason.Manual)
-    if (trackEvent) {
-      this.store.analytics.trackButtonClicked('switch_mining_type_button', 'Switch Mining Type Button', 'enabled')
-    }
-  }
-
-  @action
-  onStartButtonClicked = () => {
-    const notCompatible = !this.canRun
-    const status = this.status
-    const isRunning =
-      status === MiningStatus.Installing || status === MiningStatus.Initializing || status === MiningStatus.Running
-
-    this.store.analytics.trackButtonClicked('start_button', 'Start Button', 'enabled')
-    if (notCompatible && !isRunning) {
-      this.store.ui.showErrorPage(ErrorPageType.NotCompatible)
-    } else {
-      this.toggleRunning()
-    }
   }
 }

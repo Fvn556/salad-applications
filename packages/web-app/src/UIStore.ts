@@ -1,4 +1,7 @@
-import { action } from 'mobx'
+import { action, autorun } from 'mobx'
+import { MiningStatus } from './modules/machine/models'
+import { NotificationMessageCategory } from './modules/notifications/models'
+import { getZendeskAVData } from './modules/zendesk/utils'
 import { RootStore } from './Store'
 
 export enum ErrorPageType {
@@ -11,7 +14,26 @@ export enum ErrorPageType {
 }
 
 export class UIStore {
-  constructor(private readonly store: RootStore) {}
+  constructor(private readonly store: RootStore) {
+    autorun(() => {
+      const status = this.store.saladBowl.status
+      if (status) {
+        if (
+          status === MiningStatus.Running &&
+          this.store.routing.location.pathname === '/warnings/dont-lose-progress'
+        ) {
+          this.hideModal()
+          this.store.notifications.sendNotification({
+            category: NotificationMessageCategory.Success,
+            title: 'Chopping Started Successfully',
+            message:
+              'Congratulations! Your machine is successfully chopping. You should see your first balance within 1-30 minutes.',
+            id: 123456789,
+          })
+        }
+      }
+    })
+  }
 
   @action
   showModal = (url: string) => {
@@ -30,7 +52,15 @@ export class UIStore {
   showErrorPage = (type: ErrorPageType) => {
     switch (type) {
       case ErrorPageType.AntiVirus:
-        this.showModal('/errors/anti-virus')
+        const antiVirusSoftware = this.store.zendesk.detectedAV
+        if (antiVirusSoftware) {
+          this.store.analytics.trackErrorPageViewed(`${antiVirusSoftware} Anti-Virus Error`)
+          const articleId = getZendeskAVData(antiVirusSoftware).id
+          this.showModal(`/errors/anti-virus/${articleId}`)
+        } else {
+          this.store.analytics.trackErrorPageViewed('Generic Anti-Virus Error')
+          this.showModal('/errors/anti-virus')
+        }
         break
       case ErrorPageType.Cuda:
         this.showModal('/errors/cuda')
@@ -54,5 +84,11 @@ export class UIStore {
         this.showModal('/errors/unknown')
         break
     }
+  }
+
+  @action
+  trackAntiVirusGuideLinkClick = (id: number) => {
+    const antiVirusSoftware = getZendeskAVData(id).name
+    this.store.analytics.trackErrorPageViewed(`${antiVirusSoftware} Anti-Virus Error`)
   }
 }

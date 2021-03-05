@@ -1,23 +1,16 @@
 import { connect } from '../../connect'
 import { RootStore } from '../../Store'
 import { ErrorPageType } from '../../UIStore'
-import { MiningStatus } from '../machine/models'
-import { TitleStartButton } from './components/TitleStartButton'
+import { StartActionType } from '../salad-bowl/models'
+import { StartButton } from './components/StartButton'
 
-const mapStoreToProps = (store: RootStore): any => {
-  const notCompatible = !store.saladBowl.canRun
-  const status = store.saladBowl.status
-  const isRunning =
-    status === MiningStatus.Installing || status === MiningStatus.Initializing || status === MiningStatus.Running
+const mapStoreToProps = (store: RootStore): any => ({
+  isRunning: store.saladBowl.isRunning,
+  onClick: () => store.saladBowl.toggleRunning(StartActionType.StartButton),
+  onClickError: store.saladBowl.isNotCompatible ? () => store.ui.showErrorPage(ErrorPageType.NotCompatible) : undefined,
+  progress: store.saladBowl.preppingProgress,
+  runningTime: store.saladBowl.runningTime,
+  status: store.saladBowl.status,
+})
 
-  return {
-    isRunning,
-    notCompatible,
-    onClick: () => store.saladBowl.onStartButtonClicked(),
-    onClickError: () => store.ui.showErrorPage(ErrorPageType.NotCompatible),
-    runningTime: store.saladBowl.runningTime,
-    status,
-  }
-}
-
-export const TitleStartButtonContainer = connect(mapStoreToProps, TitleStartButton)
+export const TitleStartButtonContainer = connect(mapStoreToProps, StartButton)
