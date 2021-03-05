@@ -501,13 +501,13 @@ class _EarningChart extends Component<Props, State> {
                       }
 
                       if (selectedRangeIndexes.length > 0 && !selectedRangeIndexes.includes(index)) {
-                        color = '#000000'
+                        color = '#000019'
                         border = '#B2D530'
                       }
 
                       if (index === earningHistory.length - 1) {
                         border = color
-                        color = '#000000'
+                        color = '#000019'
                         dash = '3 3'
                       }
                       return (

@@ -43,7 +43,7 @@ class _Dropdown extends Component<Props> {
           borderRadius: 0,
           colors: {
             ...selectTheme.colors,
-            neutral0: '#000000',
+            neutral0: '#000019',
             primary25: '#1F4F22',
             primary: '#DBF1C1',
             neutral20: '#DBF1C1',

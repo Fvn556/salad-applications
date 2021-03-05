@@ -12,7 +12,7 @@ const styles = (theme: SaladTheme) => ({
   container: {
     display: 'flex',
     flexDirection: 'column',
-    color: '#000000',
+    color: '#000019',
   },
   title: {
     fontFamily: theme.fontGroteskBook25,
