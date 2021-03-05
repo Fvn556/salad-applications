@@ -8,7 +8,7 @@ storiesOf('Modules/Account/AccountViews/components/MinecraftUsername', module).a
   const username = hasUsername ? 'minecrafter_3000' : undefined
   const onUpdateUsername = action('Update Username')
   return (
-    <div style={{ backgroundColor: '#0A2133' }}>
+    <div style={{ backgroundColor: '#000000' }}>
       <MinecraftUsername username={username} onUpdate={onUpdateUsername} isUpdating={boolean('isUpdating', false)} />
     </div>
   )

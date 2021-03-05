@@ -10,7 +10,7 @@ const styles = {
     minHeight: 100,
     maxHeight: 462,
     background: '#FFFFFF',
-    border: '1px solid #0A2133',
+    border: '1px solid #000000',
     borderRadius: 5,
     padding: 30,
     display: 'flex',

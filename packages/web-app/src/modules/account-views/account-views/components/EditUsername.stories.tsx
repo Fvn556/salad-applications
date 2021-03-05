@@ -10,7 +10,7 @@ storiesOf('Modules/Account/AccountViews/components/EditUsername', module).add('d
     viewedReferralOnboarding: false,
   }
   return (
-    <div style={{ backgroundColor: '#0A2133' }}>
+    <div style={{ backgroundColor: '#000000' }}>
       <EditUsername profile={profile} />
     </div>
   )

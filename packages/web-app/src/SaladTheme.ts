@@ -35,7 +35,7 @@ export interface SaladTheme {
 
 export const DefaultTheme: SaladTheme = {
   // Colors
-  darkBlue: '#0A2133',
+  darkBlue: '#000000',
   darkGreen: '#1F4F22',
   mediumGreen: '#53A626',
   green: '#B2D530',
